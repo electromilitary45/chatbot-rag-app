@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener el historial de mensajes del chat
-    const { data: messages = [], error: messagesError } = await supabase
+    const { data: messagesData, error: messagesError } = await supabase
       .from('messages')
       .select('role, content')
       .eq('chat_id', chatId)
@@ -59,6 +59,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    const messages = messagesData || []
 
     // Obtener documentos del usuario para RAG (implementar después)
     // const { data: documents } = await supabase
