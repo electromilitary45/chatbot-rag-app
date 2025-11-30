@@ -4,9 +4,18 @@ import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
+
+interface Chat {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
 
 interface SidebarProps {
   user: {
+    id?: string
     name?: string | null
     email?: string | null
     image?: string | null
@@ -15,6 +24,26 @@ interface SidebarProps {
 
 export default function Sidebar({ user }: SidebarProps) {
   const router = useRouter()
+  const [chats, setChats] = useState<Chat[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchChats = async () => {
+      if (!user.id) return
+      try {
+        const response = await fetch(`/api/chats?userId=${user.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setChats(data)
+        }
+      } catch (error) {
+        console.error('Error loading chats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchChats()
+  }, [user.id])
 
   const handleNewChat = () => {
     router.push('/dashboard/chat/new')
@@ -52,7 +81,23 @@ export default function Sidebar({ user }: SidebarProps) {
           Historial
         </h3>
         <nav className="space-y-2">
-          {/* Los chats se cargarán aquí desde ChatList */}
+          {loading ? (
+            <div className="text-center py-4">
+              <div className="w-6 h-6 border-2 border-indigo-400 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+            </div>
+          ) : chats.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-4">No hay chats aún</p>
+          ) : (
+            chats.map((chat) => (
+              <Link
+                key={chat.id}
+                href={`/dashboard/chat/${chat.id}`}
+                className="block px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors truncate"
+              >
+                {chat.title}
+              </Link>
+            ))
+          )}
         </nav>
       </div>
 
