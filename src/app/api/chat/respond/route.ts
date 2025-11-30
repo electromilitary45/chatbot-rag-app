@@ -72,12 +72,67 @@ export async function POST(request: NextRequest) {
       { role: 'user' as const, content: userMessage },
     ]
 
-    // Generar respuesta usando OpenRouter
+    // Buscar documentos relevantes para RAG
+    let ragContext = ''
+    try {
+      // Obtener documentos del chat directamente
+      const { data: documents } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('chat_id', chatId)
+
+      if (documents && documents.length > 0) {
+        const documentIds = documents.map((d) => d.id)
+
+        // Obtener embeddings del chat
+        const { data: embeddings } = await supabase
+          .from('embeddings')
+          .select('id, content, metadata')
+          .in('document_id', documentIds)
+
+        if (embeddings && embeddings.length > 0) {
+          // Calcular similitud simple basada en palabras coincidentes
+          const queryWords = userMessage.toLowerCase().split(/\s+/)
+          const results = embeddings
+            .map((emb) => {
+              const content = emb.content.toLowerCase()
+              let score = 0
+
+              // Contar palabras que coinciden
+              for (const word of queryWords) {
+                if (content.includes(word)) {
+                  score += 1
+                }
+              }
+
+              return {
+                id: emb.id,
+                content: emb.content,
+                score,
+                metadata: emb.metadata,
+              }
+            })
+            .filter((r) => r.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3)
+
+          // Formatear resultados para RAG
+          ragContext = results
+            .map((r) => `[Documento: ${r.metadata?.filename || 'sin nombre'}]\n${r.content}`)
+            .join('\n\n---\n\n')
+        }
+      }
+    } catch (ragError) {
+      console.warn('RAG search error:', ragError)
+      // Continuar sin RAG si hay error
+    }
+
+    // Generar respuesta usando OpenRouter o Ollama con contexto RAG
     const assistantResponse = await generateChatResponse({
       messages: conversationContext,
       temperature: 0.7,
       maxTokens: 1000,
-      // ragContext: '', // Agregar contexto RAG aquí cuando esté disponible
+      ragContext, // Agregar contexto RAG aquí
     })
 
     // Guardar el mensaje del usuario

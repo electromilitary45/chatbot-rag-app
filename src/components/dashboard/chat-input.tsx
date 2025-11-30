@@ -40,6 +40,7 @@ export default function ChatInput({ chatId }: ChatInputProps) {
     setError(null)
     setLoading(true)
     const userMessage = message.trim()
+    const filesToUpload = [...files]
     setMessage('')
     setFiles([])
     if (fileInputRef.current) {
@@ -47,16 +48,32 @@ export default function ChatInput({ chatId }: ChatInputProps) {
     }
 
     try {
-      // TODO: Implementar subida de archivos a Supabase
-      // Por ahora, solo enviamos el mensaje de texto
-      
-      // Enviar el mensaje a la API que procesará con OpenRouter
+      // Subir archivos primero
+      if (filesToUpload.length > 0) {
+        for (const file of filesToUpload) {
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('chatId', chatId)
+
+          const uploadResponse = await fetch('/api/documents/upload', {
+            method: 'POST',
+            body: formData,
+          })
+
+          if (!uploadResponse.ok) {
+            const uploadData = await uploadResponse.json()
+            throw new Error(uploadData.error || 'Error al subir archivo')
+          }
+        }
+      }
+
+      // Enviar el mensaje a la API que procesará con OpenRouter/Ollama
       const response = await fetch('/api/chat/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chatId,
-          userMessage: userMessage || `[Adjuntos: ${files.map((f) => f.name).join(', ')}]`,
+          userMessage: userMessage || `[Adjuntos: ${filesToUpload.map((f) => f.name).join(', ')}]`,
         }),
       })
 
@@ -88,8 +105,9 @@ export default function ChatInput({ chatId }: ChatInputProps) {
       )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
-      // Restaurar el mensaje en caso de error
+      // Restaurar los datos en caso de error
       setMessage(userMessage)
+      setFiles(filesToUpload)
     } finally {
       setLoading(false)
     }
@@ -170,7 +188,6 @@ export default function ChatInput({ chatId }: ChatInputProps) {
             multiple
             onChange={handleFileChange}
             className="hidden"
-            accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg,.gif"
             disabled={loading}
           />
           <button
@@ -182,7 +199,7 @@ export default function ChatInput({ chatId }: ChatInputProps) {
             📎 Agregar archivo
           </button>
           <p className="text-xs text-gray-500">
-            Soportados: PDF, TXT, DOC, Imágenes
+            Cualquier tipo de archivo soportado
           </p>
         </div>
 

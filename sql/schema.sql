@@ -24,24 +24,27 @@ CREATE TABLE public.chats (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT chats_pkey PRIMARY KEY (id),
-  CONSTRAINT chats_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+  CONSTRAINT chats_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.documents (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
+  chat_id uuid,
   filename text NOT NULL,
   file_type text NOT NULL,
   file_size integer,
   file_url text NOT NULL,
+  content text,
   uploaded_at timestamp with time zone DEFAULT now(),
   CONSTRAINT documents_pkey PRIMARY KEY (id),
-  CONSTRAINT documents_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+  CONSTRAINT documents_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT documents_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id)
 );
 CREATE TABLE public.embeddings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   document_id uuid,
   content text NOT NULL,
-  embedding vector,
+  embedding USER-DEFINED,
   metadata jsonb,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT embeddings_pkey PRIMARY KEY (id),

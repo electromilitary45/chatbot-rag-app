@@ -42,7 +42,32 @@ export async function POST(request: NextRequest) {
 
     // Leer el contenido del archivo
     const buffer = await file.arrayBuffer()
-    const text = Buffer.from(buffer).toString('utf-8')
+    let text = ''
+
+    // Procesar según tipo de archivo
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      text = await extractTextFromPDF()
+    } else if (
+      file.type.startsWith('image/') ||
+      file.name.toLowerCase().match(/\.(png|jpg|jpeg|gif|webp)$/i)
+    ) {
+      // Para imágenes, usar OCR (por ahora placeholder)
+      text = `[Imagen: ${file.name}] - OCR no implementado aún`
+    } else {
+      // Para archivos de texto, intentar UTF-8
+      text = Buffer.from(buffer).toString('utf-8')
+      
+      // Si no es válido UTF-8, intentar Latin-1
+      if (!isValidUTF8(text)) {
+        text = Buffer.from(buffer).toString('latin1')
+      }
+    }
+    
+    // Sanitizar el contenido (eliminar caracteres nulos y de control)
+    text = text
+      .replace(/\0/g, '') // Eliminar caracteres nulos
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Eliminar caracteres de control
+      .trim()
 
     // Generar embeddings simples (por ahora, usamos hash del contenido)
     // En producción, usarías un servicio como Cohere o Sentence Transformers
@@ -110,12 +135,32 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Verifica si una cadena es válido UTF-8
+ */
+function isValidUTF8(str: string): boolean {
+  try {
+    return /^[\x00-\x7F]*$|^([\xC0-\xDF][\x80-\xBF]|[\xE0-\xEF][\x80-\xBF]{2}|[\xF0-\xF7][\x80-\xBF]{3})*$/.test(str)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Extrae texto de un PDF
+ * Por ahora retorna un mensaje placeholder
+ */
+async function extractTextFromPDF(): Promise<string> {
+  // TODO: Implementar extracción real de PDFs con una librería compatible
+  return '[PDF detectado - Extracción de texto en desarrollo. Por favor usa archivos TXT para RAG]'
+}
+
+/**
  * Genera un embedding simple basado en el hash del contenido y frecuencia de palabras
  * En producción, usar un servicio real de embeddings
  */
 function generateSimpleEmbedding(text: string): number[] {
-  // Array de 384 dimensiones (como modelos pequeños)
-  const embedding = new Array(384).fill(0)
+  // Array de 1536 dimensiones (como modelos como text-embedding-3-small)
+  const embedding = new Array(1536).fill(0)
 
   // Normalizar texto
   const normalized = text.toLowerCase().split(/\s+/)
