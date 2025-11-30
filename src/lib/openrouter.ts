@@ -1,21 +1,12 @@
 import OpenAI from 'openai'
 
-// Detectar si usar Ollama local o OpenRouter
-const useOllama = process.env.USE_OLLAMA === 'true'
-
-const client = useOllama
-  ? new OpenAI({
-      apiKey: 'ollama', // Ollama no requiere API key
-      baseURL: process.env.OLLAMA_URL || 'http://localhost:11434/v1',
-    })
-  : new OpenAI({
-      apiKey: process.env.OPENROUTER_API_KEY,
-      baseURL: 'https://openrouter.io/api/v1',
-      defaultHeaders: {
-        'HTTP-Referer': process.env.VERCEL_URL || 'http://localhost:3000',
-        'X-Title': 'Chatbot RAG',
-      },
-    })
+// Cliente Ollama
+function getOllamaClient(): OpenAI {
+  return new OpenAI({
+    apiKey: 'ollama', // Ollama no requiere API key real
+    baseURL: process.env.OLLAMA_URL || 'http://localhost:11434/v1',
+  })
+}
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -30,14 +21,12 @@ interface ChatContext {
 }
 
 /**
- * Genera una respuesta usando OpenRouter con contexto RAG
+ * Genera una respuesta usando Ollama con contexto RAG
  */
 export async function generateChatResponse(context: ChatContext): Promise<string> {
   try {
-    // Seleccionar modelo según si usamos Ollama o OpenRouter
-    const model = useOllama
-      ? process.env.OLLAMA_MODEL || 'mistral'
-      : process.env.OPENROUTER_MODEL || 'meta-llama/llama-2-70b-chat'
+    const client = getOllamaClient()
+    const model = process.env.OLLAMA_MODEL || 'mistral'
 
     // Preparar mensajes con contexto RAG si está disponible
     const systemPrompt = context.ragContext
@@ -62,12 +51,12 @@ export async function generateChatResponse(context: ChatContext): Promise<string
     const responseMessage = response.choices[0]?.message?.content || ''
 
     if (!responseMessage) {
-      throw new Error('No response from OpenRouter')
+      throw new Error('Sin respuesta de Ollama')
     }
 
     return responseMessage
   } catch (error) {
-    console.error('Error in generateChatResponse:', error)
+    console.error('Error en generateChatResponse:', error)
     throw error
   }
 }
