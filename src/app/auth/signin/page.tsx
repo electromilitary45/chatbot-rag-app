@@ -1,11 +1,11 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function SignIn() {
+function SignInContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
@@ -121,5 +121,13 @@ export default function SignIn() {
         </p>
       </div>
     </main>
+  )
+}
+
+export default function SignIn() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <SignInContent />
+    </Suspense>
   )
 }
