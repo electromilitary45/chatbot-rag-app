@@ -3,6 +3,11 @@ import { auth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { generateChatResponse } from '@/lib/openrouter'
 
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 interface ChatRequestBody {
   chatId: string
   userMessage: string
@@ -60,7 +65,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const messages = messagesData || []
+    const messages: Message[] = messagesData || []
 
     // Obtener documentos del usuario para RAG (implementar después)
     // const { data: documents } = await supabase
