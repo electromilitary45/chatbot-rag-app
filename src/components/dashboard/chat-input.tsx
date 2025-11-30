@@ -31,14 +31,13 @@ export default function ChatInput({ chatId }: ChatInputProps) {
     setMessage('')
 
     try {
-      // Enviar mensaje del usuario a la API
-      const response = await fetch('/api/messages', {
+      // Enviar el mensaje a la API que procesará con OpenRouter
+      const response = await fetch('/api/chat/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chatId,
-          content: userMessage,
-          role: 'user',
+          userMessage,
         }),
       })
 
@@ -47,9 +46,9 @@ export default function ChatInput({ chatId }: ChatInputProps) {
         throw new Error(data.error || 'Error al enviar mensaje')
       }
 
-      const userMsg = await response.json()
+      const { userMessage: userMsg, assistantMessage: assistantMsg } = await response.json()
 
-      // Emitir evento para actualizar la UI
+      // Emitir evento para el mensaje del usuario
       window.dispatchEvent(
         new CustomEvent('messageAdded', {
           detail: {
@@ -59,26 +58,15 @@ export default function ChatInput({ chatId }: ChatInputProps) {
         })
       )
 
-      // Aquí iría la lógica para obtener respuesta del chatbot
-      // Por ahora, simplemente mostramos un placeholder
-      setTimeout(() => {
-        const assistantMessage = {
-          id: `temp-${Date.now()}`,
-          chat_id: chatId,
-          role: 'assistant' as const,
-          content: 'Respuesta del chatbot (próximamente integrada con OpenAI)',
-          created_at: new Date().toISOString(),
-        }
-
-        window.dispatchEvent(
-          new CustomEvent('messageAdded', {
-            detail: {
-              chatId,
-              message: assistantMessage,
-            },
-          })
-        )
-      }, 500)
+      // Emitir evento para la respuesta del asistente
+      window.dispatchEvent(
+        new CustomEvent('messageAdded', {
+          detail: {
+            chatId,
+            message: assistantMsg,
+          },
+        })
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
       // Restaurar el mensaje en caso de error

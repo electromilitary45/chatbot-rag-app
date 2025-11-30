@@ -6,12 +6,13 @@ import ChatMessages from '@/components/dashboard/chat-messages'
 import ChatInput from '@/components/dashboard/chat-input'
 
 interface ChatPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function ChatPage({ params }: ChatPageProps) {
+  const { id } = await params
   const session = await auth()
 
   if (!session) {
@@ -24,7 +25,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const { data: chat, error: chatError } = await supabase
     .from('chats')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', session.user.id)
     .single()
 
@@ -36,7 +37,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const { data: messages = [] } = await supabase
     .from('messages')
     .select('*')
-    .eq('chat_id', params.id)
+    .eq('chat_id', id)
     .order('created_at', { ascending: true })
 
   return (
@@ -55,10 +56,10 @@ export default async function ChatPage({ params }: ChatPageProps) {
         </header>
 
         {/* Messages Area */}
-        <ChatMessages initialMessages={messages} chatId={params.id} />
+        <ChatMessages initialMessages={messages || []} chatId={id} />
 
         {/* Input Area */}
-        <ChatInput chatId={params.id} />
+        <ChatInput chatId={id} />
       </div>
     </div>
   )
