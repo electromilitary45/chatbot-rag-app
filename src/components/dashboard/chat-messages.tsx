@@ -78,17 +78,17 @@ export default function ChatMessages({ initialMessages, chatId }: ChatMessagesPr
                 className={`max-w-xl px-4 py-3 rounded-lg ${
                   message.role === 'user'
                     ? 'bg-indigo-600 text-white rounded-br-none'
-                    : 'bg-white text-gray-800 rounded-bl-none shadow-sm'
+                    : 'bg-white text-gray-900 border border-gray-200 rounded-bl-none shadow-sm'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap break-words">
+                <p className="text-sm whitespace-pre-wrap break-words font-medium">
                   {message.content}
                 </p>
                 <p
                   className={`text-xs mt-2 ${
                     message.role === 'user'
                       ? 'text-indigo-100'
-                      : 'text-gray-500'
+                      : 'text-gray-600'
                   }`}
                 >
                   {new Date(message.created_at).toLocaleTimeString('es-ES', {
