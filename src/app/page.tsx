@@ -1,8 +1,13 @@
 import { auth } from '@/lib/auth'
 import LoginButton from '@/components/login-button'
+import { redirect } from 'next/navigation'
 
 export default async function Home() {
   const session = await auth()
+
+  if (!session) {
+    redirect('/auth/signin')
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
